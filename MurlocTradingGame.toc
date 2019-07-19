@@ -1,0 +1,13 @@
+## Interface: 80100
+## Title: Murloc Trading Game
+## Notes: Help for Mrrl Trading Game in Najatar
+## Author: BellinRattin
+## Version: 0.0.1
+
+
+Libs\LibStub\LibStub.lua
+Libs\StdUi\StdUi.xml
+
+BlackMagic.lua
+
+MurlocTradingGame.lua
