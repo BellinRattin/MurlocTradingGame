@@ -182,12 +182,14 @@ local function CalculateSubItems(index, item, quantity, deep)
 end
 
 --function to create a buy list and "optimize" the route
+-- /run print(GetMerchantItemID(1))
+-- /run print(GetMerchantItemLink(1))
 -- took items from tmpList and put in buyList in the correct order
 local function CalculateBuyListAndRoute()
-	local itemLink = GetMerchantItemLink(1)
+	local itemid = GetMerchantItemID(1)
 	local last = {
 		["operation"] = "BUY", 
-		["itemID"] = Addon.Util.GetItemIdFromItemLink(itemLink), 
+		["itemID"] = itemid,
 		["quantity"] = 1, 
 		["deep"] = 0,
 		["merchant"] = 152084}
