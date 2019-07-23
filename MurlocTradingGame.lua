@@ -114,15 +114,10 @@ local owned = {
 local PLAYER_FULL_NAME = ""
 local clean_socks = 0
 local buyNumber = 0
+local goldTotal = 0
 
 -- list of items to buy in "optimized" order"
 local buyList = {}
--- temp list to generate the above one
-local tmpList = {
-	[1] = {},
-	[2] = {},
-	[3] = {},
-}
 
 -- function to select the buyList active entry and update the helper display
 local function UpdateCurrentBuyItem()
@@ -149,10 +144,21 @@ local function GetBagsItems()
 	end
 end
 
+local function buySort(a, b)
+	if not(a.deep == b.deep) then
+		return a.deep > b.deep
+	end
+	if not(a.merchant == b.merchant) then
+		return a.merchant > b.merchant 
+	end
+	return false
+end
+
 -- recursive function to calculate all the subitems required to buy something
-local function CalculateSubItems(index, item, quantity, deep)
+local function CalculateSubItems( item, quantity, deep)
 
 	if item == "gold" then 
+		goldTotal = goldTotal + quantity
 	else
 		local correct_quantity = quantity
 
@@ -167,7 +173,7 @@ local function CalculateSubItems(index, item, quantity, deep)
 		end
 
 		if correct_quantity > 0 then
-			table.insert(tmpList[index], 1, {
+			table.insert(buyList, {
 			["operation"] = "BUY", 
 			["itemID"] = item, 
 			["quantity"] = correct_quantity, 
@@ -175,101 +181,36 @@ local function CalculateSubItems(index, item, quantity, deep)
 			["merchant"] = merchants[item]})
 			
 			for _, curr in pairs(prices[tonumber(item)]) do
-				CalculateSubItems(index, curr[1], curr[2]*quantity, deep+1)
+				CalculateSubItems( curr[1], curr[2]*quantity, deep+1)
 			end
 		end
 	end
 end
 
 --function to create a buy list and "optimize" the route
--- /run print(GetMerchantItemID(1))
--- /run print(GetMerchantItemLink(1))
--- took items from tmpList and put in buyList in the correct order
 local function CalculateBuyListAndRoute()
 	local itemid = GetMerchantItemID(1)
-	local last = {
+	table.insert(buyList, {
 		["operation"] = "BUY", 
 		["itemID"] = itemid,
 		["quantity"] = 1, 
 		["deep"] = 0,
-		["merchant"] = 152084}
+		["merchant"] = 152084})
+
 	local itemCount = GetMerchantItemCostInfo(1)
 	for i = 1, itemCount do
 		_, itemValue, itemLink, _ = GetMerchantItemCostItem(1, i)
-		CalculateSubItems(i, Addon.Util.GetItemIdFromItemLink(itemLink), itemValue, 1)
+		CalculateSubItems(Addon.Util.GetItemIdFromItemLink(itemLink), itemValue, 1)
 	end
 
-	local mem = 0
-	local count = #tmpList[1] + #tmpList[2] + #tmpList[3]
-	local a,b,c = 1,1,1
+	table.sort(buyList, buySort)
 
-	for i = 1, count do
-		local bool = false
-
-		if not(tmpList[1][a] == nil) and not bool then
-			if tmpList[1][a].merchant == mem then
-				table.insert(buyList, tmpList[1][a])
-				a = a + 1
-				bool = true
-			end
-		end
-		if not(tmpList[2][b] == nil) and not bool then
-			if tmpList[2][b].merchant == mem then
-				table.insert(buyList, tmpList[2][b])
-				b = b + 1
-				bool = true
-			end
-		end
-		if not(tmpList[3][c] == nil) and not bool then
-			if tmpList[3][c].merchant == mem then
-				table.insert(buyList, tmpList[3][c])
-				c = c + 1
-				bool = true
-			end
-		end
-
-		if not bool then
-			if not(tmpList[1][a] == nil) then
-				if not(tmpList[2][b] == nil) then
-					if not(tmpList[3][c] == nil) then
-						-- 1 2 3 
-						if tmpList[1][a][5] == tmpList[2][b][5] then
-							table.insert(buyList,  tmpList[1][a])
-							mem = tmpList[1][a].merchant
-							a = a + 1
-						else
-							table.insert(wT,  tmpList[3][c])
-							mem = tmpList[3][c].merchant
-							c = c + 1
-						end
-					else
-						-- 1 2 X
-						table.insert(buyList,  tmpList[1][a])
-						mem = tmpList[1][a].merchant
-						a = a + 1
-					end
-				else
-					table.insert(buyList,  tmpList[1][a])
-					mem = tmpList[1][a].merchant
-					a = a + 1
-				end
-			else
-				if not(tmpList[2][b] == nil) then
-					table.insert(buyList,  tmpList[2][b])
-					mem = tmpList[2][b].merchant
-					b = b + 1 
-				else
-					if not(tmpList[3][c] == nil) then
-						-- X X 3
-						table.insert(buyList,  tmpList[3][c])
-						mem = tmpList[3][c].merchant
-						c = c + 1
-					end
-				end
-			end
-		end
+	for i = 1, #buyList do
+		print(buyList[i].deep.." - "..buyList[i].merchant)
 	end
-	table.insert(buyList, last)
+
+	print("Total gold required: "..goldTotal)
+	
 	UpdateCurrentBuyItem()
 end
 
